@@ -1,23 +1,44 @@
 # caching
-Source code examples and demo from my microservices caching session at NFJS
+Source code examples and demo from Mark Richards microservices caching session at NFJS.
 
-To run the demo (based on the source code) play the .MOV file in the demo directory.
+See the [demo](demo/) folder for a recording.
 
-To run these code samples you will need Java 1.7 or higher, RabbitMQ (3.5.4) (I use the latest rabbitmq docker image from Pivotal), and Hazelcast 3.10.2 or higher.
+The presentation slides are available [here.](https://nofluffjuststuff.com/s/slides/2018/speaker/Mark_Richards/microservices_caching_strategies/Microservices_Caching.pdf)
 
-Be sure to go into common.AMQPCommon.java and update the connection info for RabbitMQ: (you can get this info from the RabbitMQ logs or doing a "docker ps" if you are using the docker image)
+### environment setup
 
-```
-public static Channel connect() throws Exception {	
-	ConnectionFactory factory = new ConnectionFactory();	
+Run the RabbitMQ server:
 
--->	factory.setHost("192.163.98.101");
+`docker run -p 5672:5672 -d --hostname my-rabbit --name some-rabbit rabbitmq:3`
 
--->	factory.setPort(32768);
+#### Initialize Queue
+_To setup all of the exchanges, queues, and bindings used by these examples, run the following_:
 
-	Connection conn = factory.newConnection();	
-	return conn.createChannel();	
-}
-```
+`./gradlew initQueue`
 
-You will also need to be sure and run the AMQPInitialize class to setup all of the exchanges, queues, and bindings used by these examples.
+#### Start the DataWriter
+_The DataWriter receives update requests over the `datapump.q` queue and simulates a slow operation such as writing to a backend data store._  
+
+`./gradlew runDataWriter`
+
+#### Start multiple CustomerInfoService
+_CustomerInfoService consumes client requests to update the name.  Each service instance listens for update events over the queue `name.q`.  When an event occurs, an distributed in-memory cache is updated first.  The hazlecast distributed in-memory cache updates the memory of the other service instances currently running.  In addition, the name update is routed to the `DataWriter` for persistent storage over the `datapump.q` queue._
+
+Open a new terminal and run the following to start the service and initialize the cache:
+
+`./gradlew runService --args load` 
+
+Open two new terminals run the following in each:
+
+`./gradlew runService`
+
+#### Send Update Name Event
+_Run the following multiple times each with a different placeholder value for the argument:_
+
+`./gradlew update --args <Name>`
+
+#### Diagnostics
+
+_The following command examines the queues inside the RabbitMQ server:_
+
+`watch docker exec some-rabbit rabbitmqctl list_queues`

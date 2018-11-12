@@ -1,0 +1,31 @@
+repositories {
+    mavenCentral()
+}
+
+apply plugin: 'java'
+apply plugin: 'application'
+
+task initQueue(type: JavaExec) {
+    classpath = sourceSets.main.runtimeClasspath
+    main = 'common.AMQPInitialize'
+}
+
+task runDataWriter(type: JavaExec) {
+    classpath = sourceSets.main.runtimeClasspath
+    main = 'hazelcast.DataWriter'
+}
+
+task runService(type: JavaExec) {
+    classpath = sourceSets.main.runtimeClasspath
+    main = 'hazelcast.CustomerInfoService'
+}
+
+task update(type: JavaExec) {
+    classpath = sourceSets.main.runtimeClasspath
+    main = 'hazelcast.UpdateNameRequest'
+}
+
+dependencies {
+	compile group: 'com.hazelcast', name: 'hazelcast', version: '3.10.6'
+	compile group: 'com.rabbitmq', name: 'amqp-client', version: '3.5.7'
+}
